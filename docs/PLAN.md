@@ -340,3 +340,53 @@ SHA-1 of the games added for this (headered `.lnx`): Battle Wheels (1993)
 42f8a53fdba0..., Checkered Flag (1991) 848694715135..., Robo-Squash (1990)
 a5a320450820..., Todd's Adventure in Slime World (1990) a1914219cc57...,
 Warbirds (1990) b9f84b44fd2b..., Xenophobe (1990) 3c9af585a1a8....
+
+## 2026-11-14: the owner's firmware, and games played
+
+The owner's firmware folder has four Lynx boot images. `Atari_LYNX_boot.img`
+and `LYNX_boot.img` have the pinned SHA-1, E4ED47FAE31693E016B081C6BDA48DA5B70D7CCB.
+`Lynx Boot Image.bin` and `lynxboot.bin` are the DE60F2... dump (one byte
+differs, at 0x1F9; see above). The tests now use `Atari_LYNX_boot.img`, copied
+to `tests/roms-local/lynxboot.img`.
+
+### Games played past the title
+
+With that boot ROM, 4,000 frames of scripted input (A tapped every 90 frames
+from frame 300, then Right and Up in turns with A and B tapped), pictures
+looked at every 800 frames, native and sandbox the same 40 digests each:
+
+- California Games (horizontal): into the BMX event; the rider rides the
+  course with the clock counting down, and crashes.
+- Gauntlet - The Third Encounter (on its side, 102x160): in the first
+  dungeon, the hero moving, his life counting down.
+- Klax (on its side): in play, tiles caught, score 5 then 10.
+- Todd's Adventure in Slime World: in the caves, Todd moving through them.
+- Chip's Challenge: stays on the story screen after the title; the script
+  does not press what it asks for. Not played.
+
+### Allow Opposite Directions in a game
+
+In Slime World, Left and Right held together from frame 2,000 to 2,600:
+with the setting off the run is the same as one holding Left alone (the
+filter gives Left), with it on the run differs from that one; on, native and
+sandbox are the same.
+
+### Two-player games through the cable
+
+Link machine of two, the same game in each, the same script for P2 23 frames
+behind P1, 4,000 frames, native and sandbox the same 40 digests:
+
+- Gauntlet - The Third Encounter: a two-player game. Both heroes are in the
+  same dungeon on both screens, with different characters' numbers (speed
+  28 and 26).
+- Todd's Adventure in Slime World: both Todds are in the same cave on both
+  screens.
+- Checkered Flag: a two-car race; P1 is in position 2, P2 in position 1.
+- California Games: each Lynx rides the BMX course; P2's screen keeps a
+  score of its own (50). Whether the two are in one contest was not made
+  out.
+- Robo-Squash and Xenophobe ran the same natively and in the sandbox; their
+  pictures were not looked at.
+
+No match was played to its end, and three or four Lynxes were not tried
+with a game.
