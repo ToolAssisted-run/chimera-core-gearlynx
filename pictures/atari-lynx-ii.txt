@@ -1,0 +1,10 @@
+An Atari Lynx II, photographed by Evan-Amos (Vanamo Online Game Museum),
+from Wikimedia Commons:
+https://commons.wikimedia.org/wiki/File:Atari-Lynx-II-Front-Flat.jpg
+
+The photographer released this photograph into the public domain, worldwide.
+It is scaled down here to 640 by 311 pixels and saved as a PNG.
+
+The console's design and the names and logos printed on it belong to their
+owners. The picture is here so that a player can see which button is which
+in Chimera's Config > Controls.

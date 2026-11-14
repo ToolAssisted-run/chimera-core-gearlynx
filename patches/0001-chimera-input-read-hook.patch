@@ -1,0 +1,34 @@
+diff --git a/src/suzy_inline.h b/src/suzy_inline.h
+index ce73588..40e0119 100644
+--- a/src/suzy_inline.h
++++ b/src/suzy_inline.h
+@@ -20,6 +20,11 @@
+ #ifndef SUZY_INLINE_H
+ #define SUZY_INLINE_H
+ 
++// Chimera: told each time the program reads the controls (JOYSTICK or
++// SWITCHES), for lag frames and for a script's input-poll event. Weak, so a
++// build that defines no such function calls nothing.
++extern "C" void chimera_input_was_read(void) __attribute__((weak));
++
+ #include "suzy.h"
+ #include "media.h"
+ #include "m6502.h"
+@@ -371,6 +376,8 @@ INLINE u8 Suzy::Read(u16 address)
+         DebugSuzy("Reading JOYSTICK: %02X", joy);
+         if (!debug)
+             TraceInputEvent(joy, true);
++        if (!debug && chimera_input_was_read)
++            chimera_input_was_read();
+         return joy;
+     }
+     case SUZY_SWITCHES:    // 0xFCB1
+@@ -379,6 +386,8 @@ INLINE u8 Suzy::Read(u16 address)
+         DebugSuzy("Reading SWITCHES: %02X", sw);
+         if (!debug)
+             TraceInputEvent(sw, false);
++        if (!debug && chimera_input_was_read)
++            chimera_input_was_read();
+         return sw;
+     }
+     case SUZY_RCART0:      // 0xFCB2

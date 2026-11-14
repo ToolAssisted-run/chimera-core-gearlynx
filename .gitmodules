@@ -1,0 +1,4 @@
+[submodule "extern/Gearlynx"]
+	path = extern/Gearlynx
+	url = https://github.com/drhelius/Gearlynx
+	shallow = true

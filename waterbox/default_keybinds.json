@@ -1,0 +1,20 @@
+{
+  "_comment": [
+    "The joystick is on the arrow keys, A on X, B on Z, Option 1 on A, Option 2 on S and Pause on Return. Power ships unbound.",
+    "The keys are also on the first game controller: the directional pad and the left stick are the joystick, A is A, B is X, Option 1 is the left shoulder, Option 2 the right one, and Start is Pause (chimera#336)."
+  ],
+  "AllTrollers": {
+    "Atari Lynx Controls": {
+      "P1 Up": "Up, J1 POV0U, X1 DpadUp, X1 LStickUp",
+      "P1 Down": "Down, J1 POV0D, X1 DpadDown, X1 LStickDown",
+      "P1 Left": "Left, J1 POV0L, X1 DpadLeft, X1 LStickLeft",
+      "P1 Right": "Right, J1 POV0R, X1 DpadRight, X1 LStickRight",
+      "P1 A": "X, J1 B2, X1 A",
+      "P1 B": "Z, J1 B1, X1 X",
+      "P1 Option 1": "A, J1 B5, X1 LeftShoulder",
+      "P1 Option 2": "S, J1 B6, X1 RightShoulder",
+      "P1 Pause": "Enter, J1 B10, X1 Start",
+      "Power": ""
+    }
+  }
+}

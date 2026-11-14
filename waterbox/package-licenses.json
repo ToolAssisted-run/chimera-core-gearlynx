@@ -1,0 +1,38 @@
+{
+ "package": "gearlynx",
+ "effectiveTerms": "GPL-3.0-or-later",
+ "commercialUse": "allowed",
+ "note": "The core is Gearlynx by Ignacio Sanchez, under the GNU GPL version 3 or later (its LICENSE), built from the files its libretro core builds, with this repository's patches (GPL-3.0-or-later). It includes miniz (MIT), which reads zip files. This repository's own files are MIT; built together with Gearlynx, the package is under the GPL 3 or later. The package contains no game and no boot ROM of anyone's: the Lynx's boot ROM is the user's, and the part of it Gearlynx carried (the key that decrypts a cartridge's loader) is read from the user's boot ROM instead.",
+ "components": [
+  {
+   "name": "chimera-core-gearlynx (integration)",
+   "license": "MIT",
+   "url": "https://github.com/ToolAssisted-run/chimera-core-gearlynx",
+   "commit": "{selfCommit}",
+   "file": "LICENSE",
+   "sourceUrl": "https://github.com/ToolAssisted-run/chimera-core-gearlynx/archive/{commit}.tar.gz"
+  },
+  {
+   "name": "Gearlynx",
+   "license": "GPL-3.0-or-later",
+   "url": "https://github.com/drhelius/Gearlynx",
+   "commit": "{submodule:extern/Gearlynx}",
+   "file": "extern/Gearlynx/LICENSE",
+   "sourceUrl": "https://github.com/drhelius/Gearlynx/archive/{commit}.tar.gz"
+  },
+  {
+   "name": "miniz (in Gearlynx, reads zip files)",
+   "license": "MIT",
+   "url": "https://github.com/richgel999/miniz",
+   "commit": "{submodule:extern/Gearlynx}",
+   "file": "extern/Gearlynx/platforms/shared/dependencies/miniz/miniz.c",
+   "sourceUrl": "https://github.com/drhelius/Gearlynx/archive/{commit}.tar.gz"
+  },
+  {
+   "name": "An Atari Lynx II, a photograph (pictures/atari-lynx-ii.png)",
+   "license": "Public domain",
+   "url": "https://commons.wikimedia.org/wiki/File:Atari-Lynx-II-Front-Flat.jpg",
+   "file": "pictures/atari-lynx-ii.txt"
+  }
+ ]
+}

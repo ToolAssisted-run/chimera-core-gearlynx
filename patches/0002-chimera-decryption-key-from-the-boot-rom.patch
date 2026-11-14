@@ -1,0 +1,24 @@
+diff --git a/src/media.cpp b/src/media.cpp
+index 0f3f0ad..0679a14 100644
+--- a/src/media.cpp
++++ b/src/media.cpp
+@@ -1409,15 +1409,10 @@ void Media::Serialize(StateSerializer& s, int version)
+ // EPYX decryption based on Wookie's work:
+ // http://atariage.com/forums/topic/129030-lynx-encryption/
+ 
+-static const u8 k_epyx_public_mod[EPYX_DECRYPT_BLOCK_SIZE] =
+-{
+-    0x35, 0xB5, 0xA3, 0x94, 0x28, 0x06, 0xD8, 0xA2, 0x26, 0x95,
+-    0xD7, 0x71, 0xB2, 0x3C, 0xFD, 0x56, 0x1C, 0x4A, 0x19, 0xB6,
+-    0xA3, 0xB0, 0x26, 0x00, 0x36, 0x5A, 0x30, 0x6E, 0x3C, 0x4D,
+-    0x63, 0x38, 0x1B, 0xD4, 0x1C, 0x13, 0x64, 0x89, 0x36, 0x4C,
+-    0xF2, 0xBA, 0x2A, 0x58, 0xF4, 0xFE, 0xE1, 0xFD, 0xAC, 0x7E,
+-    0x79
+-};
++// Chimera: the public modulus is not carried here. It is part of the boot
++// ROM (51 bytes at 0x19A), which the user brings, so it is read from the boot
++// ROM that was loaded. A cartridge decrypted here always has one.
++#define k_epyx_public_mod (m_bios + 0x19A)
+ 
+ void Media::DecryptDoubleValue(u8* result, int length)
+ {
