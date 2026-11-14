@@ -10,8 +10,8 @@
 # The files are the ones upstream's libretro core builds
 # (platforms/libretro/Makefile.common), without the libretro program itself
 # (libretro.cpp, libretro_link.cpp and its file layer): waterbox/cinterface.cpp
-# is the core's, and waterbox/sd_card_filesystem_none.cpp says there is no SD
-# card. Nothing of the desktop program (its window, debugger or MCP server)
+# is the core's, waterbox/link.cpp is upstream's link cable adapted to it, and
+# waterbox/sd_card_filesystem_none.cpp says there is no SD card. Nothing of the desktop program (its window, debugger or MCP server)
 # is built. Both flavours compile the SAME sources; only emulibc.h differs
 # (waterbox/native-shim for the reference).
 project('chimera-core-gearlynx', ['c', 'cpp'],
@@ -44,6 +44,7 @@ inc = include_directories('waterbox', gl / 'src', gl / 'platforms/libretro',
 core_sources = files(
   'waterbox/cinterface.cpp',
   'waterbox/sd_card_filesystem_none.cpp',
+  'waterbox/link.cpp',
   gl / 'platforms/shared/dependencies/miniz/miniz.c',
   gl / 'src/audio.cpp',
   gl / 'src/bus.cpp',

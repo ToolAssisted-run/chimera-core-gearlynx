@@ -15,6 +15,8 @@ v = {
     "switchesSeen": w[0x84],  # every switch (Pause is 1)
     "line": w[0x86],         # the screen line drawn last
     "mapctl": w[0x87],       # what 0xFFF9 read at the start
+    "linkIn": w[0x8A],       # the last byte that came in through ComLynx for it
+    "linkCount": w[0x8B],    # how many came in (wrapping at 256)
 }
 if len(sys.argv) > 2:
     print(v[sys.argv[2]])

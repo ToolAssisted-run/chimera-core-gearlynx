@@ -45,7 +45,10 @@ sh waterbox/setup-guest.sh -m <miniBox> && ninja -C build/meson-guest
 Both runners take a work folder that holds what the sandbox would see: the
 game under its name, the boot ROM as `lynxboot.img`, a file `slots`
 (`{"game":["game.lnx"]}`, with `"savedata":["game.sav"]` for save data) and
-a file `settings` (`{}`, or say `{"rotation":"left","model":"lynx1"}`).
+a file `settings` (`{}`, or say `{"rotation":"left","model":"lynx1"}`). A
+link machine takes `{"machine":"link2"}` (or `link3`, `link4`) and the other
+Lynxes' games and save data in the slots `game2` to `game4` and `savedata2`
+to `savedata4`.
 `waterbox/gate-harness.h` lists the options they share (`--frames`,
 `--report`, `--press`, `--inputs`, `--watch`, `--vid-out`, `--av-stream`,
 `--dump-domain` (up to 8), `--savedata-out`, `--list-panel`); after a run
@@ -74,7 +77,9 @@ The first runs every test and says, for each, what was compared. Most need
 no file of anyone's: `tests/make-testprog.py` writes a test program of this
 repository's own, a BS93 program of 65C02 machine code assembled by the
 script. It reads the keys, counts frames, draws a line a frame, plays a tone
-while A is held and keeps what the memory map register reads.
+while A is held and keeps what the memory map register reads. With
+`link=master`, `link=slave` or `link=listen` it also talks through the
+ComLynx port, for the link tests.
 `tests/results.py` reads what it left in the RAM.
 
 The boot ROM test needs `tests/roms-local/lynxboot.img`, and the game tests

@@ -2,7 +2,7 @@
  "package": "gearlynx",
  "effectiveTerms": "GPL-3.0-or-later",
  "commercialUse": "allowed",
- "note": "The core is Gearlynx by Ignacio Sanchez, under the GNU GPL version 3 or later (its LICENSE), built from the files its libretro core builds, with this repository's patches (GPL-3.0-or-later). It includes miniz (MIT), which reads zip files. This repository's own files are MIT; built together with Gearlynx, the package is under the GPL 3 or later. The package contains no game and no boot ROM of anyone's: the Lynx's boot ROM is the user's, and the part of it Gearlynx carried (the key that decrypts a cartridge's loader) is read from the user's boot ROM instead.",
+ "note": "The core is Gearlynx by Ignacio Sanchez, under the GNU GPL version 3 or later (its LICENSE), built from the files its libretro core builds, with this repository's patches (GPL-3.0-or-later). It includes miniz (MIT), which reads zip files. This repository's own files are MIT, except its link cable (waterbox/link.cpp), adapted from Gearlynx's and under the GPL 3 or later; built together with Gearlynx, the package is under the GPL 3 or later. The package contains no game and no boot ROM of anyone's: the Lynx's boot ROM is the user's, and the part of it Gearlynx carried (the key that decrypts a cartridge's loader) is read from the user's boot ROM instead.",
  "components": [
   {
    "name": "chimera-core-gearlynx (integration)",

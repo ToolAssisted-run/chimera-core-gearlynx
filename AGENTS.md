@@ -6,7 +6,8 @@ Sanchez's Atari Lynx emulator, as a core for Chimera
 speedruns. It produces one file, `gearlynx.chimeraCore`: Gearlynx compiled to
 run inside Chimera's sandbox (miniBox), a small program around it, and the
 declarations Chimera reads (buttons, settings, file types, firmware). Its
-machine is the Atari Lynx, as a Lynx I or a Lynx II.
+machine is the Atari Lynx, as a Lynx I or a Lynx II, and link machines of
+two to four Lynxes joined by the ComLynx cable.
 
 Read [docs/BUILDING.md](docs/BUILDING.md) before building and
 [docs/PLAN.md](docs/PLAN.md) before changing how the core works: it is the
@@ -24,6 +25,8 @@ design log, with what was decided, why, and what was measured.
 - `waterbox/cinterface.cpp` - the program around Gearlynx: it loads the
   game, the boot ROM and the save data, sets the keys, runs the machine to
   the end of a picture, and is what Chimera's engine calls.
+  `waterbox/link.cpp` - linked Lynxes, adapted from upstream's libretro
+  link cable (GPL-3.0-or-later, like it).
   `waterbox/sd_card_filesystem_none.cpp` - no SD card.
 - `waterbox/waterbox.config`, `file_slots.json`, `default_keybinds.json`,
   `package-licenses.json`, `languages/` (26 tables) - what the package

@@ -1,5 +1,5 @@
 {
-  "_comment": "The kinds of file an Atari Lynx project holds. Chimera's New Project window is built from this. A project is one game, and the save data its cartridge's EEPROM starts with.",
+  "_comment": "The kinds of file an Atari Lynx project holds. Chimera's New Project window is built from this. A project is one game, and the save data its cartridge's EEPROM starts with; a link machine has a game (and save data) for each Lynx.",
   "slots": [
     {
       "id": "game",
@@ -14,6 +14,63 @@
       "help": "slot.game.help"
     },
     {
+      "id": "game2",
+      "title": "slot.game2",
+      "min": 1,
+      "max": 1,
+      "formats": [
+        "lnx",
+        "lyx",
+        "o"
+      ],
+      "help": "slot.game2.help",
+      "exposedWhen": {
+        "setting": "machine",
+        "in": [
+          "link2",
+          "link3",
+          "link4"
+        ]
+      }
+    },
+    {
+      "id": "game3",
+      "title": "slot.game3",
+      "min": 1,
+      "max": 1,
+      "formats": [
+        "lnx",
+        "lyx",
+        "o"
+      ],
+      "help": "slot.game3.help",
+      "exposedWhen": {
+        "setting": "machine",
+        "in": [
+          "link3",
+          "link4"
+        ]
+      }
+    },
+    {
+      "id": "game4",
+      "title": "slot.game4",
+      "min": 1,
+      "max": 1,
+      "formats": [
+        "lnx",
+        "lyx",
+        "o"
+      ],
+      "help": "slot.game4.help",
+      "exposedWhen": {
+        "setting": "machine",
+        "in": [
+          "link4"
+        ]
+      }
+    },
+    {
       "id": "savedata",
       "title": "slot.savedata",
       "min": 0,
@@ -24,6 +81,63 @@
       "help": "slot.savedata.help",
       "namePattern": "\\.sav$",
       "nameHelp": "common.a_saved_data_file_is_identified"
+    },
+    {
+      "id": "savedata2",
+      "title": "slot.savedata2",
+      "min": 0,
+      "max": 1,
+      "formats": [
+        "sav"
+      ],
+      "help": "slot.savedata2.help",
+      "namePattern": "\\.sav$",
+      "nameHelp": "common.a_saved_data_file_is_identified",
+      "exposedWhen": {
+        "setting": "machine",
+        "in": [
+          "link2",
+          "link3",
+          "link4"
+        ]
+      }
+    },
+    {
+      "id": "savedata3",
+      "title": "slot.savedata3",
+      "min": 0,
+      "max": 1,
+      "formats": [
+        "sav"
+      ],
+      "help": "slot.savedata3.help",
+      "namePattern": "\\.sav$",
+      "nameHelp": "common.a_saved_data_file_is_identified",
+      "exposedWhen": {
+        "setting": "machine",
+        "in": [
+          "link3",
+          "link4"
+        ]
+      }
+    },
+    {
+      "id": "savedata4",
+      "title": "slot.savedata4",
+      "min": 0,
+      "max": 1,
+      "formats": [
+        "sav"
+      ],
+      "help": "slot.savedata4.help",
+      "namePattern": "\\.sav$",
+      "nameHelp": "common.a_saved_data_file_is_identified",
+      "exposedWhen": {
+        "setting": "machine",
+        "in": [
+          "link4"
+        ]
+      }
     }
   ]
 }

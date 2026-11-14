@@ -17,14 +17,18 @@ New, and not published yet.
   Challenge, Gauntlet - The Third Encounter, Klax and Lemmings, each for
   2,000 frames from the boot ROM, in the sandbox and natively. No game was
   played through.
-- Not there: the link cable (ComLynx), and the SD card of the GameDrive and
-  El Cheapo SD homebrew cartridges.
+- The link cable (ComLynx): two, three or four Lynxes joined, each with its
+  own game and player, as one machine with the screens side by side. Tried
+  with test programs of this repository's that talk through the cable;
+  commercial games are in docs/PLAN.md.
+- Not there: the SD card of the GameDrive and El Cheapo SD homebrew
+  cartridges.
 
 ## What you bring
 
 - A game: a cartridge as a `.lnx` file (with its header) or a `.lyx` file
   (without), or a BS93 program (`.o`), the format homebrew is sent to a Lynx
-  in.
+  in. A link machine takes one for each Lynx (the same game twice is fine).
 - The Lynx's boot ROM, `lynxboot.img` (512 bytes, Atari's), for every
   cartridge. A BS93 program needs none.
 
@@ -32,6 +36,12 @@ New, and not published yet.
 
 - **Buttons**: Up, Down, Left, Right, A, B, Option 1, Option 2 and Pause.
   **Power** starts the console again.
+- **Machine**: one Lynx, or two to four linked. A link machine has a pad
+  and a Power for each Lynx, and Toggle Link Connection, which pulls the
+  cable out and puts it back. Every Lynx uses the same settings and the
+  same boot ROM.
+- **Allow Opposite Directions**: off (upstream's default), Up with Down and
+  Left with Right do not reach the game together.
 - **Console**: automatic (what the game's header asks for, else the Lynx
   II), Lynx I or Lynx II.
 - **Rotation**: automatic (the game's header or Gearlynx's list of games),

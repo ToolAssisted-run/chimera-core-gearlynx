@@ -2,7 +2,7 @@
 """Writes the core's test program: an Atari Lynx program of this repository's
 own, so the tests need no game of anyone's and no boot ROM.
 
-usage: make-testprog.py OUT.o [nopad]
+usage: make-testprog.py OUT.o [nopad] [link=master|link=slave|link=listen]
 
 The file is in BS93 format, the one homebrew is sent to a Lynx in: a 10-byte
 header (0x80 0x08, where it goes in memory, its length, "BS93") and then the
@@ -31,6 +31,19 @@ timer 2's flag goes up, it:
 
 With "nopad" the program never reads the joystick or the switches: every
 frame of it is a lag frame.
+
+With "link=..." it also talks through the ComLynx port (Mikey's UART, at
+62,500 bits a second from timer 4, with even parity and the line open
+collector, as the cable wants it). Between frames it keeps reading the port;
+it keeps the last byte that came in for it at 0x008A and counts them at
+0x008B (wrapping at 256):
+
+  - "master" sends its frame count's low 7 bits once a frame, and takes in
+    the bytes with the top bit set (the others' answers; its own bytes come
+    back to it on the shared line and are left out);
+  - "slave" takes in the bytes without the top bit (the master's) and
+    answers each with its own frame count, the top bit set;
+  - "listen" takes in the master's bytes and answers nothing.
 """
 import sys
 
@@ -48,7 +61,7 @@ OPS = {
     "TXS": {"impl": 0x9A}, "TXA": {"impl": 0x8A}, "DEX": {"impl": 0xCA},
     "DEY": {"impl": 0x88}, "CLC": {"impl": 0x18}, "SEI": {"impl": 0x78},
     "CLD": {"impl": 0xD8},
-    "BNE": {"rel": 0xD0}, "BEQ": {"rel": 0xF0}, "BPL": {"rel": 0x10},
+    "BNE": {"rel": 0xD0}, "BEQ": {"rel": 0xF0}, "BPL": {"rel": 0x10}, "BMI": {"rel": 0x30},
     "JMP": {"abs": 0x4C},
 }
 SIZE = {"impl": 1, "imm": 2, "zp": 2, "indy": 2, "rel": 2, "abs": 3, "absx": 3}
@@ -59,7 +72,7 @@ def assemble(lines, origin):
     def mode_of(op, arg):
         if arg is None:
             return "impl"
-        if op in ("BNE", "BEQ", "BPL"):
+        if op in ("BNE", "BEQ", "BPL", "BMI"):
             return "rel"
         if arg.startswith("#"):
             return "imm"
@@ -107,7 +120,7 @@ def assemble(lines, origin):
     return bytes(out)
 
 
-def program(nopad):
+def program(nopad, link):
     src = """
         SEI
         CLD
@@ -142,10 +155,48 @@ pal:    TXA
         STA $FD23
         LDA #$00
         STA $FD50
-loop:   LDA $FD81          ; INTSET: wait for timer 2's flag
+        STA $8A
+        STA $8B
+"""
+    if link:
+        src += """
+        LDA #$01           ; timer 4, the UART's clock: 1 us, reload 1
+        STA $FD10
+        LDA #$18
+        STA $FD11
+        LDA #$1D           ; SERCTL: parity on and even, reset errors, open collector
+        STA $FD8C
+"""
+    src += """
+loop:
+"""
+    if link:
+        src += """
+        LDA $FD8C          ; SERCTL: a byte in?
+        AND #$40
+        BEQ norx
+        LDA $FD8D          ; SERDAT
+"""
+        src += "        BPL norx\n" if link == "master" else "        BMI norx\n"
+        src += """
+        STA $8A
+        INC $8B
+"""
+        if link == "slave":
+            src += """
+        LDA $80
+        ORA #$80
+        STA $FD8D          ; the answer
+"""
+        src += """
+norx:
+"""
+    src += """
+        LDA $FD81          ; INTSET: wait for timer 2's flag
         AND #$04
-        BEQ loop
-        LDA #$04
+        BNE frame
+        JMP loop
+frame:  LDA #$04
         STA $FD80          ; INTRST: clear it
         INC $80
         BNE counted
@@ -196,6 +247,14 @@ quiet:  STA $FD20          ; AUD0VOL
         STA $FD24          ; AUD0TBACK: the pitch
         LDA #$1B           ; AUD0CTL: reload, count, clock 3
         STA $FD25
+"""
+    if link == "master":
+        src += """
+        LDA $80
+        AND #$7F
+        STA $FD8D          ; SERDAT: the frame count, sent
+"""
+    src += """
         JMP loop
 """
     lines = []
@@ -217,7 +276,9 @@ quiet:  STA $FD20          ; AUD0VOL
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
-    code = program("nopad" in sys.argv[2:])
+    link = next((a[5:] for a in sys.argv[2:] if a.startswith("link=")), None)
+    assert link in (None, "master", "slave", "listen"), link
+    code = program("nopad" in sys.argv[2:], link)
     size = len(code) + 10
     header = bytes((0x80, 0x08, 0x02, 0x00, size >> 8, size & 0xFF)) + b"BS93"
     with open(sys.argv[1], "wb") as f:

@@ -129,9 +129,8 @@ All shape the machine, and a movie needs the same values:
 - `fastSprites`: upstream's older, faster sprite drawing.
 - `randomSeed` (Power-on Seed): what the random numbers start from.
 
-Not offered: upstream's low-pass filter and per-channel volumes (sound only)
-and its "allow up and down together" filter: the core passes the keys as the
-movie holds them.
+Not offered: upstream's low-pass filter and per-channel volumes (sound
+only). Allow Opposite Directions came later (below).
 
 ### The boot ROM the owner has
 
@@ -232,8 +231,112 @@ games of the collection were not tried.
 
 ### Not done, or not shown
 
-- The link cable (ComLynx): upstream's libretro program joins two to four
-  Lynxes; a core of several machines is a design of its own.
+- The link cable (ComLynx): done later (below).
 - The GameDrive and El Cheapo SD cartridges have no SD card here.
 - Windows, macOS and aarch64 were not run; CI would build and test aarch64.
 - No movie was recorded in the window and replayed in a new process.
+
+## 2026-11-14: Allow Opposite Directions, and the link cable (user-decided)
+
+The owner's decisions on the first round's questions: the decryption key
+stays read from the user's boot ROM; the firmware entry keeps one pinned
+SHA-1 (Chimera takes one per entry, so the owner's DE60F2... dump is chosen
+by hand); the sound-only options stay out. And two things to add.
+
+### Allow Opposite Directions
+
+Upstream's libretro core's "allow up and down" option, off by default as
+upstream has it. Off, Up with Down (and Left with Right) never reach the
+game together: the direction given last frame wins, else Up (or Left),
+upstream's own rule. It changes what the game reads, so it is part of the
+machine. Measured (`prog:opposite`): all four held, the test program reads
+Up and Left (160) off and all four (240) on; Down held and then Up too,
+off, it stays Down (64).
+
+### The link cable (ComLynx), inside the core
+
+The owner: "No need to change this at a chimera level. Each core should be
+able to do the replication at the core level and expose this as a single
+machine to Chimera." Gearlynx links Lynxes itself: its libretro program
+(`platforms/libretro/libretro_link.cpp`) runs two to four `GearlynxCore`s
+through callbacks each core's UART calls (a byte started, a break, a sample
+of the line). `waterbox/link.cpp` is that code adapted to this core, under
+upstream's GPL 3 or later: the Lynxes run one cycle at a time, the one
+furthest behind on a shared timeline first, so no UART reads the line
+before the others reach that moment; a frame ends with P1's picture. Two
+changes: the pictures are 32-bit, and a key pressed for a frame counts from
+the frame's start, as on one Lynx (upstream's link takes it a frame later).
+Everything lives in the core's memory, which a savestate carries.
+
+The shape is the Gambatte core's Game Boy Link:
+
+- Setting **Machine**: `lynx`, `link2`, `link3`, `link4`. The package has two
+  systems, LYNX and LYNXLINK ("Atari Lynx Link"), and a machine for each
+  value.
+- Slots `game2` to `game4` and `savedata2` to `savedata4`, shown for the
+  machines that have that Lynx. One boot ROM serves every Lynx; it is needed
+  when any Lynx's game is a cartridge.
+- Controls: each Lynx's nine keys ("P2 A"), each one's Power ("P2 Power"),
+  and Toggle Link Connection, which pulls the cable out and puts it back. A
+  frame is a lag frame when no Lynx read its controls.
+- One picture, the screens side by side (320x102 for two, 640x102 for four;
+  a turned game 204x160); one sound, the Lynxes' added together. P1's frame
+  rate is the machine's.
+- Memory, the bus and the registers per Lynx ("P2 RAM", "P2 System Bus",
+  "P2 PC"); Export Save Data writes "P2 <game>.sav".
+- The other settings (Console, Rotation, Save Chip, Fast Sprites, Allow
+  Opposite Directions) are every Lynx's. The Power-on Seed is P1's; P2's is
+  that number plus 0x9E3779B9, P3's plus twice that, so two Lynxes do not
+  start as one.
+
+### The link test programs
+
+`tests/make-testprog.py link=master|slave|listen` adds Mikey's UART (timer 4
+at 1 us reload 1: 62,500 bits a second; SERCTL 0x1D: parity on and even,
+open collector). A master sends its frame count's low 7 bits once a frame; a
+slave answers each with its own count, top bit set; a listener only counts
+what the master sends. Each keeps the last byte that came in for it at 0x8A
+and counts them at 0x8B. A Lynx hears its own bytes on the shared line; the
+programs leave those out by the top bit.
+
+### Tests added
+
+`waterbox/run-gate.sh`: `prog:opposite`, `refused:link`, `link:controls`
+(41 buttons, the same in the three link machines), `link:exchange` (297
+bytes each way in 300 frames, 41 counted mod 256), `link:unplugged` (the
+cable out at frame 100: 96 bytes and no more; back in at 200: 197),
+`link:more` (three and four Lynxes: every one hears the master, 640x102),
+`link:players` (each Lynx's keys and Power its own), `link:lag`,
+`link:save-data`, `link:sandbox` (two and four Lynxes with keys, the cable
+pulled and put back and a Power: native, sandbox, a state saved and loaded
+every frame, and a new sandbox half way give the same 60 digests; 1.55 MB a
+state with four), `link:state-rewind`, `engine:link` (a project of two linked
+Lynxes in Chimera's headless runner, to the sandbox runner's memory).
+`tests/run-frontend.sh`: `window:link`, two linked Lynxes in the window.
+
+Broken on purpose, each seen to fail: the direction filter always off
+(`prog:opposite`); Toggle Link Connection doing nothing (`link:unplugged`);
+every Lynx reading P1's keys (`link:players`); P2's save data from P1's
+slot (`link:save-data`); the cable carrying nothing (`link:exchange`,
+`link:more`).
+
+### Commercial games through the cable
+
+Each of the owner's 13 games was run as two Lynxes with the same game, the
+owner's boot ROM, Pause and A pressed on both (P2 23 frames after P1),
+3,000 frames. Natively and in the sandbox the digests are the same for all
+13. Counting the bytes each Lynx's UART started (a native build with a
+count, not kept): Battle Wheels (P1 7,871, P2 6,969), California Games
+(1,645 and 1,832), Checkered Flag (4,579 and 4,608), Gauntlet - The Third
+Encounter (44,955 and 11,151), Robo-Squash (10,837 and 10,750), Todd's
+Adventure in Slime World (4,505 and 4,482), Warbirds (5,260 and 6,965) and
+Xenophobe (5,695 and 3,943) talk through the cable both ways; Batman
+Returns, Blue Lightning, Chip's Challenge, Klax and Lemmings send nothing,
+as they have no link play. That is how far it was tried: no link game was
+played into a two-player match and looked at, and three and four Lynxes
+were tried only with the test programs.
+
+SHA-1 of the games added for this (headered `.lnx`): Battle Wheels (1993)
+42f8a53fdba0..., Checkered Flag (1991) 848694715135..., Robo-Squash (1990)
+a5a320450820..., Todd's Adventure in Slime World (1990) a1914219cc57...,
+Warbirds (1990) b9f84b44fd2b..., Xenophobe (1990) 3c9af585a1a8....

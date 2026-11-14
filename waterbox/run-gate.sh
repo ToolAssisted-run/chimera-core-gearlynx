@@ -131,7 +131,8 @@ cfg = json.load(open(sys.argv[1]))
 lines = [l for l in open(sys.argv[2]).read().splitlines() if l.startswith("panel ")]
 names = [l[l.index("'") + 1:l.rindex("'")] for l in lines]
 live = all(l.endswith("active") for l in lines)
-sys.exit(0 if names and live and cfg["input"]["buttons"] == names else 1)
+one = [m for m in cfg["machines"] if m["id"] == "LYNX"]
+sys.exit(0 if names and live and len(one) == 1 and one[0]["input"]["buttons"] == names else 1)
 PY
 
 if [ -n "$chimera_root" ] && [ -f "$chimera_root/source/ui/qt/key_codes.inc" ]; then
@@ -170,6 +171,15 @@ done
 # Option 2 4, B 2, A 1; Pause is the switches' 1
 check "prog:buttons" "each of the Lynx's 9 keys, held alone, is the Lynx's own bit for it and no other ($(awk '{printf "%s ", $2}' "$work/buttons.txt"))" \
 	[ "$(awk '{printf "%s ", $2}' "$work/buttons.txt")" = "128/0 64/0 32/0 16/0 1/0 2/0 8/0 4/0 0/1 " ]
+
+# Up, Down, Left and Right held together from frame 60: with Allow Opposite
+# Directions off (the default) the game reads Up and Left, on it reads all four
+folder op '{"allowOpposite":true}' "$progs/testprog.o"
+nat opoff t --frames 100 --press 0:60:10 --press 1:60:10 --press 2:60:10 --press 3:60:10 --dump-domain RAM "$work/opoff.ram"
+nat opon op --frames 100 --press 0:60:10 --press 1:60:10 --press 2:60:10 --press 3:60:10 --dump-domain RAM "$work/opon.ram"
+nat opheld t --frames 100 --press 1:50:30 --press 0:60:10 --dump-domain RAM "$work/opheld.ram"
+check "prog:opposite" "all four directions held: with Allow Opposite Directions off the program reads Up and Left ($(r "$work/opoff.ram" joySeen)), on it reads all four ($(r "$work/opon.ram" joySeen)); Down held first and then Up too, off, stays Down ($(r "$work/opheld.ram" joySeen))" \
+	[ "$(r "$work/opoff.ram" joySeen) $(r "$work/opon.ram" joySeen) $(r "$work/opheld.ram" joySeen)" = "160 240 64" ]
 
 nat lag q --frames 300 --report 100
 check "prog:lag" "a frame is a lag frame when the program did not read the controls: the program that reads them every frame has $(field "$work/idle.out" lag) in 300 (the two before it starts its loop), its twin that never does $(field "$work/lag.out" lag)" \
@@ -248,6 +258,93 @@ for n in s-rot s-rot-box s-rot-rr; do stream "$work/$n.out" > "$work/$n.stream";
 check "prog:sandbox-turned" "turned left on a Lynx I too, native, sandbox and a state saved and loaded every frame print the same $(wc -l < "$work/s-rot.stream") digests" \
 	sh -c "cmp -s '$work/s-rot.stream' '$work/s-rot-box.stream' && cmp -s '$work/s-rot.stream' '$work/s-rot-rr.stream' && [ -s '$work/s-rot.stream' ]"
 
+# ------------------------------------------------- Lynxes joined by ComLynx
+# The link programs (tests/make-testprog.py link=...): a "master" sends its
+# frame count's low 7 bits once a frame; a "slave" answers each with its own
+# count, the top bit set; a "listen" takes the master's bytes and answers
+# nothing. Each keeps the last byte that came in for it and counts them.
+python3 "$root/tests/make-testprog.py" "$progs/master.o" link=master
+python3 "$root/tests/make-testprog.py" "$progs/slave.o" link=slave
+python3 "$root/tests/make-testprog.py" "$progs/listen.o" link=listen
+# lfolder <name> <machine> <settings beyond the machine> <games...>, P1's first
+lfolder() {
+	lf_name="$1"; lf_machine="$2"; lf_more="$3"; shift 3
+	rm -rf "${work:?}/$lf_name"; mkdir -p "$work/$lf_name"
+	lf_slots=""; lf_k=1
+	for g in "$@"; do
+		cp "$g" "$work/$lf_name/p$lf_k-$(basename "$g")"
+		[ $lf_k = 1 ] && lf_id=game || lf_id="game$lf_k"
+		lf_slots="$lf_slots${lf_slots:+,}\"$lf_id\":[\"p$lf_k-$(basename "$g")\"]"
+		lf_k=$((lf_k + 1))
+	done
+	printf '{%s}' "$lf_slots" > "$work/$lf_name/slots"
+	printf '{"machine":"%s"%s}' "$lf_machine" "$lf_more" > "$work/$lf_name/settings"
+}
+# lnat <name> <folder> <players> <options...>: a native run, each Lynx's RAM dumped
+lnat() {
+	ln_name="$1"; ln_dir="$2"; ln_n="$3"; shift 3
+	ln_dumps=()
+	for ((k = 1; k <= ln_n; k++)); do ln_dumps+=(--dump-domain "P$k RAM" "$work/$ln_name.p$k"); done
+	"$native" "$work/$ln_dir" "$@" "${ln_dumps[@]}" > "$work/$ln_name.out" 2> "$work/$ln_name.err"
+}
+lr() { r "$work/$1.p$2" "$3"; }
+lfolder l2 link2 "" "$progs/master.o" "$progs/slave.o"
+lfolder l3 link3 "" "$progs/master.o" "$progs/slave.o" "$progs/listen.o"
+lfolder l4 link4 "" "$progs/master.o" "$progs/slave.o" "$progs/listen.o" "$progs/listen.o"
+"$native" "$work/l4" --frames 1 --list-panel > "$work/panel-link.out" 2> /dev/null
+check "link:controls" "a link machine declares the core's own $(grep -c '^panel' "$work/panel-link.out") buttons, in the core's order (each Lynx's nine keys, each one's Power, Toggle Link Connection)" \
+	python3 - "$here/waterbox.config" "$work/panel-link.out" <<'PY'
+import json, sys
+cfg = json.load(open(sys.argv[1]))
+lines = [l for l in open(sys.argv[2]).read().splitlines() if l.startswith("panel ")]
+names = [l[l.index("'") + 1:l.rindex("'")] for l in lines]
+link = [m for m in cfg["machines"] if m["id"] == "LYNXLINK"]
+sys.exit(0 if names and len(link) == 3 and all(m["input"]["buttons"] == names for m in link) else 1)
+PY
+lnat x2 l2 2 --frames 300 --report 25
+check "link:exchange" "two Lynxes joined by the cable pass a byte each way every frame: $(lr x2 1 linkCount) and $(lr x2 2 linkCount) came in (297 each, counted mod 256: none in the frames before the programs start); P1 got P2's count with the top bit set ($(lr x2 1 linkIn)), P2 got P1's ($(lr x2 2 linkIn)); both ran ($(lr x2 1 frames) and $(lr x2 2 frames) frames), side by side in a $(size "$work/x2.out") picture" \
+	sh -c "[ '$(lr x2 1 linkCount) $(lr x2 2 linkCount)' = '41 41' ] && [ '$(lr x2 1 linkIn)' -ge 128 ] && [ '$(lr x2 2 linkIn)' -lt 128 ] && [ '$(lr x2 1 frames) $(lr x2 2 frames)' = '298 298' ] && [ '$(size "$work/x2.out")' = 320x102 ]"
+cn="$(index l2 "Toggle Link Connection")"
+lnat x2u l2 2 --frames 300 --press "$cn":100:1
+lnat x2r l2 2 --frames 300 --press "$cn":100:1 --press "$cn":200:1
+check "link:unplugged" "Toggle Link Connection pulls the cable out at frame 100: P2 gets nothing more ($(lr x2u 2 linkCount) bytes by frame 300); pressed again at 200 it is back in ($(lr x2r 2 linkCount))" \
+	sh -c "[ '$(lr x2u 2 linkCount)' -ge 90 ] && [ '$(lr x2u 2 linkCount)' -le 100 ] && [ '$(lr x2r 2 linkCount)' -ge \$(( $(lr x2u 2 linkCount) + 90 )) ]"
+lnat x3 l3 3 --frames 300
+lnat x4 l4 4 --frames 300 --report 300
+check "link:more" "three and four Lynxes on one cable: every Lynx hears the master (three: P2 $(lr x3 2 linkCount), P3 $(lr x3 3 linkCount); four: P2 $(lr x4 2 linkCount), P3 $(lr x4 3 linkCount), P4 $(lr x4 4 linkCount), mod 256) and the master hears the one that answers ($(lr x3 1 linkCount), $(lr x4 1 linkCount)); four side by side are $(size "$work/x4.out")" \
+	sh -c "[ '$(lr x3 1 linkCount) $(lr x3 2 linkCount) $(lr x3 3 linkCount)' = '41 41 41' ] && [ '$(lr x4 1 linkCount) $(lr x4 2 linkCount) $(lr x4 3 linkCount) $(lr x4 4 linkCount)' = '41 41 41 41' ] && [ '$(size "$work/x4.out")' = 640x102 ]"
+p2a="$(index l2 "P2 A")"; p2pw="$(index l2 "P2 Power")"
+lnat xb l2 2 --frames 300 --press "$p2a":200:20 --press 0:80:20 --press "$p2pw":150:1
+check "link:players" "each Lynx has its own keys and Power: P1 saw only Up ($(lr xb 1 joySeen)), P2 only A ($(lr xb 2 joySeen)); P2's Power started P2 alone again (P1 counted $(lr xb 1 frames) frames, P2 $(lr xb 2 frames) since)" \
+	sh -c "[ '$(lr xb 1 joySeen) $(lr xb 2 joySeen) $(lr xb 1 frames)' = '128 1 298' ] && [ '$(lr xb 2 frames)' -ge 145 ] && [ '$(lr xb 2 frames)' -le 151 ]"
+lfolder lq link2 "" "$progs/nopad.o" "$progs/nopad.o"
+lfolder lq1 link2 "" "$progs/nopad.o" "$progs/testprog.o"
+nat lq lq --frames 300 --report 300
+nat lq1 lq1 --frames 300 --report 300
+check "link:lag" "a link machine's frame is a lag frame when no Lynx read its controls: $(field "$work/lq.out" lag) in 300 when neither does, $(field "$work/lq1.out" lag) when P2 does" \
+	[ "$(field "$work/lq.out" lag) $(field "$work/lq1.out" lag)" = "300 2" ]
+python3 -c "import sys; open(sys.argv[1], 'wb').write(bytes((i * 5 + 1) & 255 for i in range(128)))" "$progs/p2.sav"
+lfolder lsv link2 ',"eeprom":"93c46_16"' "$progs/master.o" "$progs/slave.o"
+cp "$progs/p2.sav" "$work/lsv/p2.sav"
+printf '{"game":["p1-master.o"],"game2":["p2-slave.o"],"savedata2":["p2.sav"]}' > "$work/lsv/slots"
+mkdir -p "$work/lsv-out"
+nat lsv lsv --frames 30 --savedata-out "$work/lsv-out"
+check "link:save-data" "each linked Lynx has its own EEPROM: P2's starts from the slot savedata2 and is exported as 'P2 p2-slave.sav' ($(ls "$work/lsv-out" | tr '\n' ',')), P1's as 'P1 p1-master.sav'" \
+	sh -c "cmp -s '$work/lsv-out/P2 p2-slave.sav' '$progs/p2.sav' && [ -f '$work/lsv-out/P1 p1-master.sav' ] && ! cmp -s '$work/lsv-out/P1 p1-master.sav' '$progs/p2.sav'"
+lrun="--frames 600 --report 10 --press 4:50:40 --press $p2a:80:30 --press $cn:250:1 --press $cn:320:1 --press $p2pw:400:1"
+for n in 2 4; do
+	nat "ls$n" "l$n" $lrun
+	box "ls$n-box" "l$n" $lrun
+	box "ls$n-rr" "l$n" $lrun --rerecord
+	box "ls$n-ses" "l$n" $lrun --session
+	for f in "ls$n" "ls$n-box" "ls$n-rr" "ls$n-ses"; do stream "$work/$f.out" > "$work/$f.stream"; done
+done
+check "link:sandbox" "two and four linked Lynxes, with keys, the cable pulled and put back, and a Power: native, sandbox, a state saved and loaded every frame, and a new sandbox half way print the same $(wc -l < "$work/ls2.stream") and $(wc -l < "$work/ls4.stream") digests ($(grep -o 'stateBytes=[0-9]*' "$work/ls4-rr.err" | head -1 | sed 's/stateBytes=//') bytes a state with four)" \
+	sh -c "for n in 2 4; do for f in box rr ses; do cmp -s '$work/ls'\$n.stream '$work/ls'\$n-\$f.stream || exit 1; done; done; [ -s '$work/ls4.stream' ]"
+box lrw l2 --frames 1600 --report 5 --rewind
+check "link:state-rewind" "two linked Lynxes: a state kept at frame 800 and loaded at 1200, and the frames after the load repeat those after the save" \
+	repeats "$work/lrw.out" 800 1200 380 5
+
 # ------------------------------------------------- refused, and why
 mkdir -p "$work/none"; printf '{}' > "$work/none/settings"
 nat none none --frames 1
@@ -256,6 +353,9 @@ printf 'not a game' > "$work/junk.lnx"
 folder junk '{}' "$work/junk.lnx"
 nat junk junk --frames 1
 check "refused:not-a-game" "a file too short to be a game is refused, and says so" grep -q "Init failed.*error.too_short" "$work/junk.out" "$work/junk.err"
+folder nolink '{"machine":"link2"}' "$progs/master.o"
+nat nolink nolink --frames 1
+check "refused:link" "a link machine of two with no game for P2 is refused, and says whose game is missing" grep -q "Init failed.*error.no_file_player.2" "$work/nolink.out" "$work/nolink.err"
 python3 -c "import sys; open(sys.argv[1], 'wb').write(bytes((i * 13 + 1) & 255 for i in range(131072)))" "$work/cart.lyx"
 folder nobios '{}' "$work/cart.lyx"
 nat nobios nobios --frames 1
@@ -348,6 +448,21 @@ else
 	report "engine:game" SKIP "needs CHIMERA_ROOT with the package, and lynxboot.img in tests/roms-local"
 fi
 
+if [ -n "$chimera_root" ] && [ -x "$runner" ] && [ -f "$package" ]; then
+	mkdir -p "$work/lproj"
+	cp "$work/l2/p1-master.o" "$work/l2/p2-slave.o" "$work/lproj/"
+	"$native" "$work/l2" --frames 1 --list-panel > "$work/panel-l2.out" 2> /dev/null
+	python3 "$root/tests/make-project.py" "$package" "$work/lproj/link.chimeraProject" 300 machine=link2 \
+		"press=P2 A:199:101" "press=Toggle Link Connection:149:1" panel="$work/panel-l2.out" \
+		-- game="$work/lproj/p1-master.o" game2="$work/lproj/p2-slave.o" > /dev/null
+	"$runner" --project "$work/lproj/link.chimeraProject" "$package" --files "$work/lproj" --frames 300 \
+		--dump "P2 RAM=$work/elink.p2" > "$work/elink.log" 2>&1
+	box elink l2 --frames 300 --press "$p2a":200:101 --press "$cn":150:1 --dump-domain "P2 RAM" "$work/elink-box.p2"
+	check "engine:link" "a project of two linked Lynxes, with P2's A pressed and the cable pulled at frame 150, plays in Chimera's headless runner to the sandbox runner's memory of P2's Lynx (it saw A: $(r "$work/elink.p2" joySeen); its bytes stopped at $(r "$work/elink.p2" linkCount))" \
+		sh -c "cmp -s '$work/elink.p2' '$work/elink-box.p2' && [ '$(r "$work/elink.p2" joySeen)' = 1 ] && [ '$(r "$work/elink.p2" linkCount)' -lt 150 ]"
+else
+	report "engine:link" SKIP "needs CHIMERA_ROOT with build/dll/chimera-run and build/Cores/gearlynx.chimeraCore"
+fi
 echo
 echo "$ok passed, $failed failed, $skipped skipped"
 [ "$failed" -eq 0 ]

@@ -23,7 +23,8 @@ SOFTWARE.
 --------------------------------------------------------------------------
 
 The licence above covers this repository's own files: the program around the
-emulator (waterbox/), the tests (including the test program that
+emulator (waterbox/, except waterbox/link.cpp and link.h, which are adapted
+from Gearlynx's libretro link cable and are under its GPL 3 or later), the tests (including the test program that
 tests/make-testprog.py writes) and the documents.
 
 It does not cover Gearlynx. Gearlynx (extern/Gearlynx, a submodule) is

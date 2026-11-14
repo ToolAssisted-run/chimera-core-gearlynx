@@ -6,6 +6,8 @@
 #    frame, with two keys pressed, at the Lynx's picture size (160x102);
 #  - the same turned left (Rotation), at 102x160, with Up read as Right;
 #  - the keys the package ships become Chimera's keys for the controls;
+#  - two Lynxes linked by the cable run in the window side by side and leave
+#    the headless runner's memory;
 #  - without its boot ROM a cartridge's project is not opened, and the file
 #    is named;
 #  - a game of yours (tests/games-local/, the first .lnx) runs with the boot
@@ -150,6 +152,29 @@ if [ -f "$work/keys.meta.txt" ] && grep -q "^status=OK" "$work/keys.meta.txt"; t
 	fi
 else
 	report "window:keys" FAIL "Chimera did not finish the run: $(tail -2 "$work/keys.log" | tr '\n' ' ' | cut -c1-200)"
+fi
+
+# ---- two Lynxes linked: the link programs, P2's A held, the cable pulled
+python3 "$here/make-testprog.py" "$work/progs/master.o" link=master
+python3 "$here/make-testprog.py" "$work/progs/slave.o" link=slave
+mkdir -p "$work/lprobe"
+cp "$work/progs/master.o" "$work/progs/slave.o" "$work/lprobe/"
+printf '{"game":["master.o"],"game2":["slave.o"]}' > "$work/lprobe/slots"; printf '{"machine":"link2"}' > "$work/lprobe/settings"
+"$runwbx" "$core" "$work/lprobe" --frames 1 --list-panel > "$work/panel-link.out" 2> /dev/null
+mkdir -p "$work/lk"
+cp "$work/progs/master.o" "$work/progs/slave.o" "$work/lk/"
+python3 "$here/make-project.py" "$package" "$work/lk/lk.chimeraProject" $((frames + 100)) machine=link2 \
+	"press=P2 A:99:$frames" "press=Toggle Link Connection:199:1" "panel=$work/panel-link.out" \
+	-- "game=$work/lk/master.o" "game2=$work/lk/slave.o" > "$work/lk.log" 2>&1
+"$runner" --project "$work/lk/lk.chimeraProject" "$package" --files "$work/lk" --frames "$frames" \
+	--dump "P2 RAM=$work/lk-engine.ram.bin" > "$work/lk-engine.log" 2>&1
+if ! run_frontend lk "$work/settings.base.json" "$frames" "P2 RAM"; then
+	report "window:link" FAIL "Chimera did not finish the run: $(value lk detail) $(tail -2 "$work/lk.log" | tr '\n' ' ' | cut -c1-200)"
+elif [ "$(value lk frames)" = "$frames" ] && [ "$(value lk width)x$(value lk height)" = 320x102 ] && [ -s "$work/lk-engine.ram.bin" ] && cmp -s "$work/lk-engine.ram.bin" "$work/lk.ram.bin" \
+	&& [ "$(r "$work/lk.ram.bin" joySeen)" = 1 ]; then
+	report "window:link" PASS "two linked Lynxes ran $frames frames in the window, side by side at 320x102, with P2's A held and the cable pulled at frame 200 (P2 saw A, and $(r "$work/lk.ram.bin" linkCount) bytes came in for it); P2's memory is what the headless runner leaves"
+else
+	report "window:link" FAIL "frames $(value lk frames) of $frames, picture $(value lk width)x$(value lk height), or P2's memory differs from the headless runner's ($(r "$work/lk.ram.bin" joySeen) $(r "$work/lk.ram.bin" linkCount))"
 fi
 
 # ---- a game of yours, with the boot ROM from Chimera's firmware
